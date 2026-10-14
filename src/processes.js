@@ -203,13 +203,17 @@ const WINDOWS_QUERY = String.raw`
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $PSModuleAutoLoadingPreference = 'None'
+# Windows PowerShell may expand PSModulePath during startup. Restrict it again
+# before importing any module, including dependencies of trusted manifests.
+$env:PSModulePath = $PSHOME + '\Modules'
 $stage = 'startup'
 try {
   [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
   [Console]::WriteLine('{"type":"status","stage":"startup"}')
   $stage = 'system-modules'
-  Import-Module -Name ($PSHOME + '\Modules\CimCmdlets\CimCmdlets.psd1') -ErrorAction Stop
+  # With auto-loading disabled, the CIM manifest needs Utility cmdlets first.
   Import-Module -Name ($PSHOME + '\Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
+  Import-Module -Name ($PSHOME + '\Modules\CimCmdlets\CimCmdlets.psd1') -ErrorAction Stop
   $stage = 'identity'
   $ownerSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
   $omitted = $false

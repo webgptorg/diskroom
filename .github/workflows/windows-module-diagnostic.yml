@@ -1,11 +1,6 @@
 name: Windows module diagnostic
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/windows-module-diagnostic.yml
-      - src/processes.js
   workflow_dispatch:
 
 permissions:
