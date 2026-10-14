@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const output = path.join(root, 'native', 'prebuilds', `${process.platform}-${process.arch}`, 'diskroom_native.node');
+const nodeGypVersion = '13.1.0';
 await mkdir(path.dirname(output), { recursive: true });
 
 // A provided Node development-header directory permits reproducible offline Unix builds.
@@ -18,9 +19,13 @@ if (process.env.DISKROOM_NODE_HEADERS && process.platform !== 'win32') {
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
 } else {
+  const [major, minor, patch] = process.versions.node.split('.').map(Number);
+  const supportedBuildNode = (major === 22 && (minor > 22 || (minor === 22 && patch >= 2))) || (major === 24 && minor >= 15) || major >= 26;
+  if (!supportedBuildNode) throw new Error(`Building with node-gyp@${nodeGypVersion} requires Node 22.22.2+ (22.x), Node 24.15.0+ (24.x), or Node 26+. Current build runtime: ${process.version}. Install a supported build runtime; published prebuilt binaries have separate runtime support.`);
   // npm's entrypoint runs with node on Windows too; no shell or .cmd interpolation.
   const npmCli = process.env.npm_execpath || path.join(path.dirname(process.execPath), process.platform === 'win32' ? 'node_modules/npm/bin/npm-cli.js' : '../lib/node_modules/npm/bin/npm-cli.js');
-  const result = spawnSync(process.execPath, [npmCli, 'exec', '--yes', '--package=node-gyp@11.5.0', '--', 'node-gyp', 'rebuild'], { cwd: root, stdio: 'inherit', shell: false });
+  // Includes Visual Studio 2026 (18.x) discovery and its subsequent version fix.
+  const result = spawnSync(process.execPath, [npmCli, 'exec', '--yes', `--package=node-gyp@${nodeGypVersion}`, '--', 'node-gyp', 'rebuild'], { cwd: root, stdio: 'inherit', shell: false });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
   await copyFile(path.join(root, 'build', 'Release', 'diskroom_native.node'), output);

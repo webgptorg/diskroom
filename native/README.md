@@ -77,11 +77,17 @@ unsafe fallback in this bridge.
 
 ## Build and package
 
-`node scripts/build-native.mjs` runs pinned `node-gyp@11.5.0` using the current
+`node scripts/build-native.mjs` runs pinned `node-gyp@13.1.0` using the current
 Node headers and the platform compiler (GCC/Clang, Xcode tools or MSVC). It writes
 `native/prebuilds/<platform>-<arch>/diskroom_native.node`. N-API v8 keeps the
 binary ABI stable across supported Node releases. Windows requires a current
 Visual Studio C++ build-tools installation, supplied by GitHub's runner image.
+This pin supports Visual Studio 2026 (18.x), including its corrected version
+detection. The online build tool requires Node 22.22.2+ in the Node 22 line or
+Node 24.15.0+ in the Node 24 line; CI installs current patches in both lines.
+These are build-tool prerequisites, not a change to the published N-API runtime
+support. See the [node-gyp release notes](https://github.com/nodejs/node-gyp/releases/tag/v13.1.0)
+and [engine requirement](https://github.com/nodejs/node-gyp/blob/v13.1.0/package.json).
 
 For offline Unix builds, `DISKROOM_NODE_HEADERS=/path/to/official/node/headers`
 uses `CC` (default `cc`) directly. No header downloads or compilation occur when

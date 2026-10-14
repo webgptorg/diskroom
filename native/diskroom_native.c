@@ -2,7 +2,14 @@
  * N-API v8; no V8 ABI dependency. See README.md for the POSIX leaf-race boundary.
  */
 #ifndef _WIN32
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
+#endif
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+/* Darwin's POSIX namespace hides st_*timespec and O_NOFOLLOW unless its
+ * extensions are enabled. Keep the nanosecond identity and no-follow APIs. */
+#define _DARWIN_C_SOURCE 1
+#endif
 #endif
 #include <node_api.h>
 #include <stdint.h>
