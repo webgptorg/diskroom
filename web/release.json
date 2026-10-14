@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
-  "npmPublished": false,
-  "npmUrl": null,
+  "npmPublished": true,
+  "npmUrl": "https://www.npmjs.com/package/diskroom",
   "repositoryUrl": "https://github.com/webgptorg/diskroom",
   "siteUrl": "https://diskroom.vercel.app",
   "license": "MIT",
@@ -12,10 +12,12 @@
   },
   "nodeMinimum": "22.23.3",
   "verification": {
-    "runUrl": "https://github.com/webgptorg/diskroom/actions/runs/38619566523",
-    "sourceCommit": "4c044e66e965200aaef5f2e02bec3fbf5d342cc9",
+    "runUrl": "https://github.com/webgptorg/diskroom/actions/runs/38620678449",
+    "sourceCommit": "d83fc2741e6ee5cd170960470b27de7c4beac7ca",
     "sourceJobs": 10,
     "installedPackageJobs": 10,
-    "result": "passed"
+    "result": "passed",
+    "artifactId": 11921588143,
+    "packageIntegrity": "sha512-SIbR/MzrhT0A2WS8ujRZKLSSHe8xKQSzcLKmqi3PlVweGnOXiTTJRQP/wM4WsQitWlF+yGj06UNOBhce/Jv0DQ=="
   }
 }

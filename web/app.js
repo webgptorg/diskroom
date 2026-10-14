@@ -99,4 +99,4 @@ fetch('release.json', { cache: 'no-cache' }).then(response => {
     const element = document.querySelector(`[data-platform="${platform}"]`);
     if (element && typeof result === 'string') element.textContent = result;
   }
-}).catch(() => { /* Honest pending labels remain visible without JS or metadata. */ });
+}).catch(() => { /* Static release information remains visible without JS or metadata. */ });
