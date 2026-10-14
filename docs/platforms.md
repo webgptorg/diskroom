@@ -4,17 +4,19 @@ DiskRoom targets native Linux, macOS, and Windows, with a minimum runtime of Nod
 
 The release process must update the table from actual CI and installed-package results before claiming a verified release. Defining a workflow, compiling on another OS, or running Linux tests is not proof of Windows/macOS behavior.
 
-The following is dated evidence from **14 October 2026**, commit `b29087e5`, [CI run 38617605431](https://github.com/webgptorg/diskroom/actions/runs/38617605431). It is a historical snapshot, not a claim that a later commit or published package passed.
+The following is dated evidence from **14 October 2026**, commit `4c044e66e965200aaef5f2e02bec3fbf5d342cc9`, [CI run 38619566523](https://github.com/webgptorg/diskroom/actions/runs/38619566523). All **21 jobs passed**: ten native source jobs, one assembly job, and ten jobs installing the same assembled tarball. This is a historical result, not a claim that a later commit or registry publication has passed.
 
-| Target | Native source tests in this run | Assembled installed-package tests | Recorded result |
+| Target | Native source tests in this run | Same assembled tarball installed | Recorded result |
 | --- | --- | --- | --- |
-| Linux x64 | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
-| Linux arm64 | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
-| macOS Intel | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
-| macOS Apple silicon | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
-| Windows x64 / PowerShell | Source gate failed on a process-observation test; the Windows import fix is pending validation. | Not run; no complete artifact assembled. | Release blocked. |
+| Linux x64 | Node 22.23.3 and Node 24 jobs passed. | Both Node jobs passed. | Source and installed-package gates passed. |
+| Linux arm64 | Node 22.23.3 and Node 24 jobs passed. | Both Node jobs passed. | Source and installed-package gates passed. |
+| macOS Intel | Node 22.23.3 and Node 24 jobs passed. | Both Node jobs passed. | Source and installed-package gates passed. |
+| macOS Apple silicon | Node 22.23.3 and Node 24 jobs passed. | Both Node jobs passed. | Source and installed-package gates passed. |
+| Windows x64 / PowerShell | Node 22.23.3 and Node 24 jobs passed. | Both Node jobs passed. | Source and installed-package gates passed. |
 
-Eight Linux/macOS source jobs passed, but the Windows failure prevented the full release pipeline from succeeding. The earlier local Linux x64 tarball/native smoke is separate evidence and does not verify an assembled multiplatform package. See [verification evidence](verification.md) for that local scope, and [live Actions](https://github.com/webgptorg/diskroom/actions) for newer results. Every advertised target and installed-tarball job must pass for the exact artifact being published.
+The source jobs built the native bridge on each target. The installed-package jobs checked CLI startup, npm-created bin shims, and confined native filesystem operations without install scripts. These checks do not imply complete interactive-terminal coverage, live Docker verification, or browser visual QA. Artifact identity and remaining limits are recorded in [verification evidence](verification.md).
+
+Earlier incomplete runs remain historical evidence; the successful run above supersedes their release-blocking results for this commit only. See [live Actions](https://github.com/webgptorg/diskroom/actions) for newer results. Every advertised target and installed-tarball job must pass for the exact artifact being published.
 
 See `.github/workflows/ci.yml` for the current exact runner/Node matrix and `web/release.json` for public release status. Optional managers and Docker/Git actions do not gain execution support merely because Node tests pass; refer to [capabilities](capabilities.md).
 

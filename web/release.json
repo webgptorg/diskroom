@@ -6,8 +6,16 @@
   "siteUrl": "https://diskroom.vercel.app",
   "license": "MIT",
   "platformVerification": {
-    "linux": "Linux x64: Node 24.19.0 and Node 22.23.3 tested locally; full release matrix pending",
-    "macos": "Native verification pending",
-    "windows": "Native verification pending"
+    "linux": "Linux x64 and arm64: source and installed-package checks passed on Node 22.23.3 and 24.19.0",
+    "macos": "macOS Intel and Apple silicon: source and installed-package checks passed on Node 22.23.3 and 24.19.0",
+    "windows": "Windows x64: source and installed-package checks passed on Node 22.23.3 and 24.19.0"
+  },
+  "nodeMinimum": "22.23.3",
+  "verification": {
+    "runUrl": "https://github.com/webgptorg/diskroom/actions/runs/38619566523",
+    "sourceCommit": "4c044e66e965200aaef5f2e02bec3fbf5d342cc9",
+    "sourceJobs": 10,
+    "installedPackageJobs": 10,
+    "result": "passed"
   }
 }

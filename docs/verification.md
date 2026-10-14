@@ -1,6 +1,8 @@
-# Local verification evidence
+# Verification evidence
 
-Recorded 14 October 2026. These are local prerelease checks, not evidence of an npm publication or a completed cross-platform release.
+Recorded 14 October 2026. Local checks and remote CI are listed separately. Neither is proof of registry publication or canonical-domain availability. Results apply to the recorded source and artifact, not automatically to later changes.
+
+## Historical local checks
 
 | Check | Actual result |
 | --- | --- |
@@ -18,18 +20,31 @@ Recorded 14 October 2026. These are local prerelease checks, not evidence of an 
 
 The source suite is run with `node --test`. The local installed-package smoke is `node native/smoke.mjs /absolute/path/to/installed/diskroom/native/index.js`.
 
-## Remote CI evidence
+## Successful remote CI
 
-Sources are present on `main` in [webgptorg/diskroom](https://github.com/webgptorg/diskroom). CI runs [38614542668](https://github.com/webgptorg/diskroom/actions/runs/38614542668) and [38615387227](https://github.com/webgptorg/diskroom/actions/runs/38615387227) failed; they are not release approval. Target-specific fixes are being validated. Consult [live Actions](https://github.com/webgptorg/diskroom/actions) for newer results.
+[CI run 38619566523](https://github.com/webgptorg/diskroom/actions/runs/38619566523) completed successfully on 14 October 2026 for commit `4c044e66e965200aaef5f2e02bec3fbf5d342cc9`.
 
-The release gate is one complete successful source, package-assembly, and installed-tarball matrix for the exact artifact and commit being published. Local results and passing jobs from different commits cannot substitute for that gate.
+| Check | Recorded result |
+| --- | --- |
+| Native source matrix | All ten jobs passed: Node 22.23.3 and Node 24 across Linux x64/arm64, macOS x64/arm64, and Windows x64. |
+| Windows source test log | 106 tests passed, 13 platform-specific skips, no failures. |
+| Artifact assembly | One `diskroom-package` artifact assembled after all source jobs passed. |
+| Installed-package matrix | All ten jobs installed that same tarball without lifecycle scripts and passed CLI/bin-shim/native smoke checks. |
+| Total | 21 successful jobs: ten source, one assembly, ten installed-package. |
+| Downloaded artifact | GitHub artifact ID `11921626132`; archive SHA-256 `668c595f20346c50a5f07e6113db744804c9bdd59952be8bebec53dcdd09ed8d`. |
+| Tarball inventory | 44 packaged files, including five target-native binaries; MIT license and Node `>=22.23.3` metadata verified. |
+
+The archive SHA-256 identifies the downloaded GitHub ZIP. The tarball has its own SHA-512 integrity in `manifest.json`; that tarball integrity must match the registry after publication. A successful artifact build does not claim the version is already published.
+
+Earlier runs [38614542668](https://github.com/webgptorg/diskroom/actions/runs/38614542668), [38615387227](https://github.com/webgptorg/diskroom/actions/runs/38615387227), and [38617605431](https://github.com/webgptorg/diskroom/actions/runs/38617605431) failed and remain historical records. The successful run above verifies its own commit. Consult [live Actions](https://github.com/webgptorg/diskroom/actions) for newer results.
+
+Every release still requires one complete successful source, package-assembly, and installed-tarball matrix for its exact artifact and commit. Local results and passing jobs from different commits cannot substitute for that gate.
 
 ## Outstanding evidence
 
-- A complete successful CI matrix on every declared target, including Linux arm64, macOS Intel/Apple silicon, Windows x64, and the assembled single multiplatform tarball.
 - Real Docker daemon removal on disposable resources; Git maintenance on macOS/Windows is deliberately unavailable.
 - Browser rendering on desktop/mobile. Playwright was installed, but browser executables were unavailable; the connected browser timed out. No screenshot or visual QA claim is made.
-- Custom-domain registration/DNS/TLS and public npm installation.
+- Registry publication and fresh public-package installation are separate release checks: compare the selected version’s registry integrity to its tested manifest. Custom-domain registration/DNS/TLS is separate from the working Vercel production URL.
 - Production website access is enabled publicly on `diskroom.vercel.app`; preview deployment protection remains enabled. Browser visual verification is still pending.
 - Million-file performance, genuinely near-full storage and every filesystem/permission/concurrency scenario.
 
