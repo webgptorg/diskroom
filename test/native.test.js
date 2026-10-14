@@ -19,17 +19,25 @@ nativeTest('native packaged bridge deletes only expected fixture entries', runNa
 
 nativeTest('native leaf replacement and post-snapshot write are refused', async () => fixture(async directory => {
   await writeFile(path.join(directory, 'victim'), 'original');
-  const root = native.openRoot(directory);
+  let root = native.openRoot(directory);
   try {
     const expected = native.statChild(root, 'victim');
+    if (process.platform === 'win32') {
+      // Windows refuses this path-based rename while its parent is pinned.
+      await assert.rejects(rename(path.join(directory, 'victim'), path.join(directory, 'old')), { code: 'EBUSY' });
+      assert.equal(await readFile(path.join(directory, 'victim'), 'utf8'), 'original');
+      native.close(root); root = null;
+    }
     await rename(path.join(directory, 'victim'), path.join(directory, 'old'));
     await writeFile(path.join(directory, 'victim'), 'replacement');
+    // Still test stale leaf identity on Windows after releasing the rename lock.
+    if (!root) root = native.openRoot(directory);
     assert.throws(() => native.removeChild(root, 'victim', expected), { code: 'ERR_CHANGED_ENTRY' });
     const changed = native.statChild(root, 'victim');
     await writeFile(path.join(directory, 'victim'), 'longer replacement content');
     assert.throws(() => native.removeChild(root, 'victim', changed), { code: 'ERR_CHANGED_ENTRY' });
     assert.equal(await readFile(path.join(directory, 'victim'), 'utf8'), 'longer replacement content');
-  } finally { native.close(root); }
+  } finally { if (root) native.close(root); }
 }));
 
 nativeTest('native directory handles retain their ancestors after wrapper close', async () => fixture(async directory => {

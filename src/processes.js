@@ -13,6 +13,7 @@ const MAX_REFS = 100000;
 const MAX_PATH = 32768;
 const TIMEOUT_MS = 10000;
 const GENERAL_LIMIT = 'Process inspection is a point-in-time observation of same-user processes; other-user processes, permission-restricted paths and future opens are not fully observable. Absence of observed use is not proof of inactivity.';
+const WINDOWS_PHASES = new Set(['startup', 'system-modules', 'identity', 'process-list', 'owner-query', 'serialization']);
 
 /** Internal runner: errors/stderr are intentionally never exposed in reports. */
 export function runProcessProbe(executable, args, { env, timeoutMs = TIMEOUT_MS, maxBytes = MAX_OUTPUT } = {}) {
@@ -175,10 +176,16 @@ export function windowsAbsoluteArguments(commandLine) {
 export function parseWindowsProcessLines(output, { selfPid = process.pid, maxRefs = MAX_REFS } = {}) {
   const text = textOutput(output), found = collector(maxRefs);
   if (text === null) return { refs: [], incomplete: true };
-  let complete = false, incomplete = false;
+  let complete = false, incomplete = false, phase = null, failure = null;
   for (const line of text.replace(/^\ufeff/, '').split(/\r?\n/)) {
     if (!line) continue;
     let row; try { row = JSON.parse(line); } catch { incomplete = true; continue; }
+    if (row?.type === 'status' && WINDOWS_PHASES.has(row.stage)) { phase = row.stage; continue; }
+    if (row?.type === 'failure' && WINDOWS_PHASES.has(row.stage)) {
+      phase = row.stage;
+      failure = { phase, code: Number.isSafeInteger(row.code) && Math.abs(row.code) <= 0xffffffff ? row.code : null };
+      incomplete = true; continue;
+    }
     if (row?.type === 'complete') { complete = true; incomplete ||= row.omitted !== false; continue; }
     if (!row || row.type !== 'process' || row.sameUser !== true || !Number.isSafeInteger(row.pid) || row.pid <= 0) { incomplete = true; continue; }
     if (row.pid === selfPid) continue;
@@ -189,36 +196,47 @@ export function parseWindowsProcessLines(output, { selfPid = process.pid, maxRef
     for (const file of windowsAbsoluteArguments(row.commandLine)) found.add(file, 'process-argument', row.pid);
     if (found.limited) break;
   }
-  return { refs: found.refs, incomplete: !complete || incomplete || found.limited };
+  return { refs: found.refs, incomplete: !complete || incomplete || found.limited, phase, failure };
 }
 
 const WINDOWS_QUERY = String.raw`
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $PSModuleAutoLoadingPreference = 'None'
-[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-Import-Module -Name ($PSHOME + '\Modules\CimCmdlets\CimCmdlets.psd1') -ErrorAction Stop
-Import-Module -Name ($PSHOME + '\Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
-$ownerSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$omitted = $false
-$count = 0
+$stage = 'startup'
 try {
-  CimCmdlets\Get-CimInstance -ClassName Win32_Process -Property ProcessId,ExecutablePath,CommandLine -OperationTimeoutSec 3 | ForEach-Object {
+  [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+  [Console]::WriteLine('{"type":"status","stage":"startup"}')
+  $stage = 'system-modules'
+  Import-Module -Name ($PSHOME + '\Modules\CimCmdlets\CimCmdlets.psd1') -ErrorAction Stop
+  Import-Module -Name ($PSHOME + '\Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell.Utility.psd1') -ErrorAction Stop
+  $stage = 'identity'
+  $ownerSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  $omitted = $false
+  $count = 0
+  $stage = 'process-list'
+  CimCmdlets\Get-CimInstance -ClassName Win32_Process -Property Handle,ProcessId,ExecutablePath,CommandLine -OperationTimeoutSec 3 | ForEach-Object {
     $item = $_
     if ($item.ProcessId -ne $PID) {
       $count++
       if ($count -gt 20000) { throw 'Process observation limit' }
       try {
+        $stage = 'owner-query'
         $owner = CimCmdlets\Invoke-CimMethod -InputObject $item -MethodName GetOwnerSid -OperationTimeoutSec 2
         if ($owner.ReturnValue -eq 0 -and $owner.Sid -eq $ownerSid) {
+          $stage = 'serialization'
           $record = @{ type='process'; sameUser=$true; pid=[int]$item.ProcessId; executablePath=$item.ExecutablePath; commandLine=$item.CommandLine }
           [Console]::WriteLine((Microsoft.PowerShell.Utility\ConvertTo-Json -InputObject $record -Compress))
         } elseif ($owner.ReturnValue -ne 0) { $omitted = $true }
       } catch { $omitted = $true }
     }
   }
+  $stage = 'serialization'
   [Console]::WriteLine((Microsoft.PowerShell.Utility\ConvertTo-Json -InputObject @{ type='complete'; omitted=$omitted } -Compress))
-} catch { exit 1 }
+} catch {
+  [Console]::WriteLine('{"type":"failure","stage":"' + $stage + '","code":' + ([int]$_.Exception.HResult) + '}')
+  exit 1
+}
 `;
 
 function unavailable(message) { return { refs: [], coverage: 'unavailable', limitations: [message, GENERAL_LIMIT] }; }
@@ -258,11 +276,14 @@ export async function nativeProcessSnapshot({
     if (!await executableExists(executable, platform)) return unavailable('Trusted system Windows PowerShell is unavailable; process observations are unavailable.');
     const windows = path.win32.dirname(directory), home = path.win32.dirname(executable);
     let result;
-    try { result = await run(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', WINDOWS_QUERY], { env: { SystemRoot: windows, WINDIR: windows, PATH: directory, PSModulePath: path.win32.join(home, 'Modules') } }); }
+    // Encode the fixed script so CreateProcess/PowerShell command-line quoting
+    // cannot reinterpret its syntax. No project input is inserted in the script.
+    try { result = await run(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(WINDOWS_QUERY, 'utf16le').toString('base64')], { env: { SystemRoot: windows, WINDIR: windows, PATH: directory, PSModulePath: path.win32.join(home, 'Modules') } }); }
     catch { return unavailable('The Windows process query could not start.'); }
     const parsed = parseWindowsProcessLines(result.stdout, { selfPid });
     return { refs: parsed.refs, coverage: 'partial', limitations: [
       'Windows observes available same-user executable paths and whole absolute command-line arguments through system PowerShell/CIM. Process working directories and open-file handles are unavailable; relative arguments, embedded shell commands and --key=value paths are not resolved. Raw command lines are discarded and never written to reports.',
+      ...(parsed.failure ? [`Windows process query failed during ${parsed.failure.phase}${parsed.failure.code === null ? '' : ` (system error ${parsed.failure.code})`}.`] : result.code !== 0 && !parsed.phase ? ['Windows process query did not initialize its machine-readable output.'] : []),
       ...diagnostics(result, parsed.incomplete), GENERAL_LIMIT,
     ] };
   }

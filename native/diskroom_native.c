@@ -208,6 +208,27 @@ static HANDLE open_relative(dr_handle *parent, const char *name, ACCESS_MASK acc
   if (status < 0) { SetLastError(status_to_error(status)); return INVALID_HANDLE_VALUE; }
   return child;
 }
+static HANDLE reopen_directory_attributes(dr_handle *directory) {
+  typedef NTSTATUS (NTAPI *open_file_fn)(PHANDLE, ACCESS_MASK, POBJECT_ATTRIBUTES, PIO_STATUS_BLOCK, ULONG, ULONG);
+  typedef ULONG (WINAPI *status_to_error_fn)(NTSTATUS);
+  HMODULE module = GetModuleHandleW(L"ntdll.dll");
+  open_file_fn open_file = module ? (open_file_fn)GetProcAddress(module, "NtOpenFile") : NULL;
+  status_to_error_fn status_to_error = module ? (status_to_error_fn)GetProcAddress(module, "RtlNtStatusToDosError") : NULL;
+  if (!open_file || !status_to_error) { SetLastError(ERROR_NOT_SUPPORTED); return INVALID_HANDLE_VALUE; }
+  // An empty name relative to a held handle reopens that same object. Use
+  // explicit directory semantics; ReOpenFile can reject directory handles.
+  UNICODE_STRING empty = {0};
+  OBJECT_ATTRIBUTES attributes = {0};
+  attributes.Length = sizeof(attributes); attributes.RootDirectory = directory->handle;
+  attributes.ObjectName = &empty; attributes.Attributes = 0x40; /* OBJ_CASE_INSENSITIVE */
+  IO_STATUS_BLOCK status_block = {0};
+  HANDLE writable = INVALID_HANDLE_VALUE;
+  NTSTATUS status = open_file(&writable, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE,
+    &attributes, &status_block, FILE_SHARE_READ,
+    0x00000001u | 0x00200000u | 0x00000020u); /* DIRECTORY, OPEN_REPARSE_POINT, SYNCHRONOUS_IO_NONALERT */
+  if (status < 0) { SetLastError(status_to_error(status)); return INVALID_HANDLE_VALUE; }
+  return writable;
+}
 static void windows_time(LARGE_INTEGER time, int64_t *seconds, long *nanos) {
   int64_t ticks = time.QuadPart - INT64_C(116444736000000000);
   *seconds = ticks / INT64_C(10000000);
@@ -586,9 +607,15 @@ static napi_value native_mark_hidden(napi_env env, napi_callback_info info) {
   if (!args(env, info, 1, 1, values, &count)) return NULL;
   dr_handle *directory = get_handle(env, values[0]); if (!directory) return NULL;
 #ifdef _WIN32
-  HANDLE writable = ReOpenFile(directory->handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES,
-    FILE_SHARE_READ, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT);
+  HANDLE writable = reopen_directory_attributes(directory);
   if (writable == INVALID_HANDLE_VALUE) return os_error(env, "open audit directory attributes");
+  dr_stat original, reopened;
+  if (!stat_handle(directory->handle, &original) || !stat_handle(writable, &reopened)) {
+    napi_value failure = os_error(env, "verify audit directory identity"); CloseHandle(writable); return failure;
+  }
+  if (original.dev != reopened.dev || original.ino != reopened.ino || !reopened.directory || reopened.symlink) {
+    CloseHandle(writable); return error(env, "ERR_IDENTITY_CHANGED", "Audit directory identity changed while opening attributes");
+  }
   FILE_BASIC_INFO basic;
   if (!GetFileInformationByHandleEx(writable, FileBasicInfo, &basic, sizeof(basic))) {
     napi_value failure = os_error(env, "read audit directory attributes"); CloseHandle(writable); return failure;
@@ -596,9 +623,16 @@ static napi_value native_mark_hidden(napi_env env, napi_callback_info info) {
   if ((basic.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) || !(basic.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
     CloseHandle(writable); return error(env, "ERR_INVALID_PATH", "Expected an ordinary audit directory");
   }
-  basic.FileAttributes |= FILE_ATTRIBUTE_HIDDEN;
-  if (!SetFileInformationByHandle(writable, FileBasicInfo, &basic, sizeof(basic))) {
+  FILE_BASIC_INFO update = {0}; /* Zero timestamps leave each existing time unchanged. */
+  update.FileAttributes = (basic.FileAttributes | FILE_ATTRIBUTE_HIDDEN) & ~FILE_ATTRIBUTE_NORMAL;
+  if (!SetFileInformationByHandle(writable, FileBasicInfo, &update, sizeof(update))) {
     napi_value failure = os_error(env, "set audit directory hidden attribute"); CloseHandle(writable); return failure;
+  }
+  if (!GetFileInformationByHandleEx(writable, FileBasicInfo, &basic, sizeof(basic))) {
+    napi_value failure = os_error(env, "verify audit directory hidden attribute"); CloseHandle(writable); return failure;
+  }
+  if (!(basic.FileAttributes & FILE_ATTRIBUTE_HIDDEN)) {
+    CloseHandle(writable); return error(env, "ERR_NATIVE_IO", "Audit directory hidden attribute was not set");
   }
   CloseHandle(writable);
   napi_value result; NAPI_TRY(napi_get_boolean(env, true, &result)); return result;

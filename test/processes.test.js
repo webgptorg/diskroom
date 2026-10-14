@@ -96,7 +96,10 @@ test('Windows probes native-discovered system PowerShell without user profiles o
     run: async (executable, args, options) => {
       assert.equal(executable, 'D:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');
       assert.ok(args.includes('-NoProfile')); assert.ok(args.includes('-NonInteractive'));
-      assert.match(args.at(-1), /GetOwnerSid/); assert.match(args.at(-1), /owner\.Sid -eq \$ownerSid/);
+      assert.ok(args.includes('-EncodedCommand'));
+      const script = Buffer.from(args.at(-1), 'base64').toString('utf16le');
+      assert.match(script, /GetOwnerSid/); assert.match(script, /owner\.Sid -eq \$ownerSid/);
+      assert.match(script, /-Property Handle,ProcessId,ExecutablePath,CommandLine/);
       assert.equal(options.env.SystemRoot, 'D:\\Windows');
       assert.equal(options.env.PSModulePath, 'D:\\Windows\\System32\\WindowsPowerShell\\v1.0\\Modules');
       assert.equal(Object.hasOwn(options.env, 'NODE_OPTIONS'), false);
@@ -123,6 +126,21 @@ test('query warnings and limits retain observations while excluding diagnostic s
   assert.equal(snapshot.refs.length, 1);
   assert.match(snapshot.limitations.join(' '), /time limit/);
   assert.match(snapshot.limitations.join(' '), /output limit/);
+  assert.equal(JSON.stringify(snapshot).includes('DO_NOT_PERSIST'), false);
+});
+
+test('Windows failure diagnostics retain only a fixed phase and numeric system code', async () => {
+  const output = JSON.stringify({ type: 'failure', stage: 'system-modules', code: -2146233087, message: 'DO_NOT_PERSIST', commandLine: 'PRIVATE' }) + '\n';
+  const parsed = parseWindowsProcessLines(output);
+  assert.deepEqual(parsed.failure, { phase: 'system-modules', code: -2146233087 });
+  assert.equal(parsed.incomplete, true);
+  assert.equal(JSON.stringify(parsed).includes('DO_NOT_PERSIST'), false);
+  assert.equal(JSON.stringify(parsed).includes('PRIVATE'), false);
+  assert.equal(parseWindowsProcessLines(JSON.stringify({ type: 'failure', stage: 'DO_NOT_PERSIST', code: 'PRIVATE' })).failure, null);
+  const snapshot = await nativeProcessSnapshot({ platform: 'win32', systemDirectory: () => 'C:\\Windows\\System32', executableExists: async () => true,
+    run: async () => ({ ...success(output), code: 1 }),
+  });
+  assert.match(snapshot.limitations.join(' '), /failed during system-modules \(system error -2146233087\)/);
   assert.equal(JSON.stringify(snapshot).includes('DO_NOT_PERSIST'), false);
 });
 
@@ -171,5 +189,5 @@ test('real Windows observer protects a child absolute argument', { skip: process
   await once(child.stdout, 'data');
   const snapshot = await nativeProcessSnapshot();
   assert.equal(snapshot.coverage, 'partial');
-  assert.ok(snapshot.refs.some(ref => ref.pid === child.pid && ref.kind === 'process-argument' && ref.path.toLowerCase() === file.toLowerCase()), JSON.stringify(snapshot.limitations));
+  assert.ok(snapshot.refs.some(ref => ref.pid === child.pid && ref.kind === 'process-argument' && ref.path.toLowerCase() === file.toLowerCase()), JSON.stringify({ limitations: snapshot.limitations, observations: snapshot.refs.length, fixtureKinds: snapshot.refs.filter(ref => ref.pid === child.pid).map(ref => ref.kind) }));
 });
