@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test ${{ matrix.target.id }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.target.runner }}
+    timeout-minutes: 20
+    env:
+      DISKROOM_REQUIRE_NATIVE: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+        target:
+          - { id: linux-x64, runner: ubuntu-24.04, arch: x64 }
+          - { id: linux-arm64, runner: ubuntu-24.04-arm, arch: arm64 }
+          - { id: darwin-x64, runner: macos-15-intel, arch: x64 }
+          - { id: darwin-arm64, runner: macos-15, arch: arm64 }
+          - { id: win32-x64, runner: windows-2025, arch: x64 }
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: ${{ matrix.node }}
+          architecture: ${{ matrix.target.arch }}
+          package-manager-cache: false
+      - name: Verify actual target
+        env:
+          EXPECTED_TARGET: ${{ matrix.target.id }}
+        run: node -e "if (process.platform + '-' + process.arch !== process.env.EXPECTED_TARGET) process.exit(1)"
+      - run: npm ci --ignore-scripts
+      - name: Build native filesystem bridge
+        run: node scripts/build-native.mjs
+      - run: npm run check
+      - run: npm test
+      - name: Retain N-API prebuild from Node 22
+        if: matrix.node == '22'
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: native-${{ matrix.target.id }}
+          path: native/prebuilds/
+          if-no-files-found: error
+          retention-days: 7
+
+  package:
+    name: Assemble distributable
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          pattern: native-*
+          path: native/prebuilds/
+          merge-multiple: true
+      - run: npm ci --ignore-scripts
+      - name: Check every native binary is present
+        run: |
+          node --input-type=module <<'NODE'
+          import { stat } from 'node:fs/promises';
+          for (const target of ['linux-x64', 'linux-arm64', 'darwin-x64', 'darwin-arm64', 'win32-x64']) {
+            const info = await stat(`native/prebuilds/${target}/diskroom_native.node`);
+            if (!info.isFile() || info.size === 0) throw new Error(`Missing native binary: ${target}`);
+          }
+          NODE
+      - name: Pack the tested sources and all native binaries
+        run: |
+          mkdir -p .release
+          npm pack --ignore-scripts --json --pack-destination .release > .release/pack.json
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
+          const [pack] = JSON.parse(await readFile('.release/pack.json', 'utf8'));
+          const expected = ['linux-x64', 'linux-arm64', 'darwin-x64', 'darwin-arm64', 'win32-x64'];
+          for (const target of expected) {
+            if (!pack.files.some(file => file.path === `native/prebuilds/${target}/diskroom_native.node`)) {
+              throw new Error(`Tarball omits native binary: ${target}`);
+            }
+          }
+          if (!pack.files.some(file => file.path === 'LICENSE')) throw new Error('Tarball omits LICENSE');
+          if (pack.files.some(file => /(^|\/)(\.env(?:\..*)?|\.npmrc|\.git)(\/|$)/.test(file.path))) {
+            throw new Error('Tarball contains a prohibited configuration file');
+          }
+          const bytes = await readFile(`.release/${pack.filename}`);
+          await writeFile('.release/manifest.json', JSON.stringify({
+            name: pack.name, version: pack.version, filename: pack.filename,
+            integrity: `sha512-${createHash('sha512').update(bytes).digest('base64')}`,
+            commit: process.env.GITHUB_SHA, targets: expected
+          }, null, 2) + '\n');
+          NODE
+      - uses: actions/upload-artifact@v6.0.0
+        with:
+          name: diskroom-package
+          path: .release/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+
+  package-smoke:
+    name: Installed package ${{ matrix.target.id }} / Node ${{ matrix.node }}
+    needs: package
+    runs-on: ${{ matrix.target.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
+        target:
+          - { id: linux-x64, runner: ubuntu-24.04, arch: x64 }
+          - { id: linux-arm64, runner: ubuntu-24.04-arm, arch: arm64 }
+          - { id: darwin-x64, runner: macos-15-intel, arch: x64 }
+          - { id: darwin-arm64, runner: macos-15, arch: arm64 }
+          - { id: win32-x64, runner: windows-2025, arch: x64 }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: ${{ matrix.node }}
+          architecture: ${{ matrix.target.arch }}
+          package-manager-cache: false
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          name: diskroom-package
+          path: .release/
+      - name: Verify tarball checksum
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
+          const manifest = JSON.parse(await readFile('.release/manifest.json', 'utf8'));
+          const bytes = await readFile(`.release/${manifest.filename}`);
+          const actual = `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
+          if (actual !== manifest.integrity || manifest.commit !== process.env.GITHUB_SHA) {
+            throw new Error('Package integrity or source commit mismatch');
+          }
+          NODE
+      - name: Install tarball without install scripts
+        run: npm install --prefix "$RUNNER_TEMP/diskroom-smoke" --ignore-scripts --no-audit --no-fund --package-lock=false .release/*.tgz
+      - name: Exercise the installed command
+        run: |
+          node "$RUNNER_TEMP/diskroom-smoke/node_modules/diskroom/bin/diskroom.js" --version
+          node "$RUNNER_TEMP/diskroom-smoke/node_modules/diskroom/bin/diskroom.js" --help
+      - name: Exercise the installed native bridge on isolated fixtures
+        run: node native/smoke.mjs "$RUNNER_TEMP/diskroom-smoke/node_modules/diskroom/native/index.js"

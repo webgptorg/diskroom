@@ -1,0 +1,10 @@
+node_modules/
+.diskroom/
+*.tgz
+coverage/
+.DS_Store
+.env
+.env.*
+build/
+native/prebuilds/
+.release/

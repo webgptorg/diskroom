@@ -1,0 +1,131 @@
+name: Publish npm package
+
+# A push or pull request never publishes. A maintainer starts this workflow
+# against main after creating the matching reviewed version tag.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact package version to publish (for example 0.1.0)
+        required: true
+        type: string
+      dist_tag:
+        description: npm distribution channel
+        required: true
+        default: latest
+        type: choice
+        options: [latest, next]
+      confirm_public_release:
+        description: Publish this reviewed version publicly on npm
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    name: Validate owner release request
+    if: github.repository == 'webgptorg/diskroom' && github.ref == 'refs/heads/main' && inputs.confirm_public_release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Check version, license, repository and release tag
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import { execFileSync } from 'node:child_process';
+          const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+          const version = process.env.RELEASE_VERSION;
+          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version) || version !== pkg.version) {
+            throw new Error('Release input must exactly match package.json version');
+          }
+          if (version.includes('-') && process.env.DIST_TAG === 'latest') throw new Error('Use next for a prerelease');
+          if (pkg.name !== 'diskroom' || pkg.private === true) throw new Error('Unexpected package identity');
+          if (!pkg.license || pkg.license === 'UNLICENSED') throw new Error('Owner must choose the release license');
+          if (pkg.repository?.url !== 'git+https://github.com/webgptorg/diskroom.git') {
+            throw new Error('repository.url must identify the publishing repository exactly');
+          }
+          if ((await readFile('LICENSE', 'utf8')).trim().length < 100) throw new Error('Missing license text');
+          const tagged = execFileSync('git', ['rev-parse', `refs/tags/v${version}^{commit}`], { encoding: 'utf8' }).trim();
+          if (tagged !== process.env.GITHUB_SHA) throw new Error('Release tag must point to this main commit');
+          NODE
+
+  verify:
+    name: Cross-platform release gates
+    needs: metadata
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: Publish the verified tarball with npm OIDC
+    needs: [metadata, verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          name: diskroom-package
+          path: .release/
+      - name: Verify runtime, package identity and integrity
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+          const npm = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim().split('.').map(Number);
+          if (npm[0] < 11 || (npm[0] === 11 && (npm[1] < 5 || (npm[1] === 5 && npm[2] < 1)))) {
+            throw new Error('npm >= 11.5.1 is required for trusted publishing');
+          }
+          const manifest = JSON.parse(await readFile('.release/manifest.json', 'utf8'));
+          if (manifest.name !== 'diskroom' || manifest.version !== process.env.RELEASE_VERSION || manifest.commit !== process.env.GITHUB_SHA) {
+            throw new Error('Unexpected release artifact identity');
+          }
+          const bytes = await readFile(`.release/${manifest.filename}`);
+          if (`sha512-${createHash('sha512').update(bytes).digest('base64')}` !== manifest.integrity) {
+            throw new Error('Release artifact checksum mismatch');
+          }
+          NODE
+      - name: Publish
+        env:
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: npm publish .release/*.tgz --ignore-scripts --access public --tag "$DIST_TAG"
+      - name: Confirm registry integrity
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          npm view "diskroom@$RELEASE_VERSION" dist.integrity --json > .release/registry-integrity.json
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const local = JSON.parse(await readFile('.release/manifest.json', 'utf8'));
+          const registry = JSON.parse(await readFile('.release/registry-integrity.json', 'utf8'));
+          if (registry !== local.integrity) throw new Error('Registry tarball differs from the tested artifact');
+          NODE

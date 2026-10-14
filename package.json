@@ -1,0 +1,51 @@
+{
+  "name": "diskroom",
+  "version": "0.1.0",
+  "description": "Goal-driven disk cleanup for developers.",
+  "type": "module",
+  "bin": {
+    "diskroom": "bin/diskroom.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "homepage": "https://diskroom.dev",
+  "license": "MIT",
+  "files": [
+    "bin/",
+    "src/",
+    "native/index.js",
+    "native/prebuilds/",
+    "README.md",
+    "LICENSE",
+    "docs/",
+    "examples/",
+    "SECURITY.md",
+    "native/README.md",
+    "native/diskroom_native.c"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.mjs",
+    "prepack": "npm run check && npm test",
+    "build:native": "node scripts/build-native.mjs",
+    "prepublishOnly": "node scripts/check-release.mjs"
+  },
+  "keywords": [
+    "disk",
+    "cleanup",
+    "cli",
+    "developer-tools",
+    "node_modules"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webgptorg/diskroom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/webgptorg/diskroom/issues"
+  }
+}

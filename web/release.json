@@ -1,0 +1,13 @@
+{
+  "version": "0.1.0",
+  "npmPublished": false,
+  "npmUrl": null,
+  "repositoryUrl": "https://github.com/webgptorg/diskroom",
+  "siteUrl": "https://diskroom.vercel.app",
+  "license": "MIT",
+  "platformVerification": {
+    "linux": "Linux x64: Node 24.19.0 and Node 22.23.3 tested locally; full release matrix pending",
+    "macos": "Native verification pending",
+    "windows": "Native verification pending"
+  }
+}

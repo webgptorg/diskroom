@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DiskRoom — Make room for what’s next.</title>
+  <meta name="description" content="Goal-driven disk cleanup for developers. Scan, review, and make the room you need, with explanations and a local audit.">
+  <meta name="theme-color" content="#f5f5ed">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="shell nav-row">
+  <a class="brand" href="index.html" aria-label="DiskRoom home"><img src="favicon.svg" alt="" width="34" height="34">DiskRoom<span class="brand-dot">.</span></a>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Menu <span aria-hidden="true">＋</span></button>
+  <nav id="main-nav" aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#playground">Try the idea</a><a href="docs.html">Documentation <span aria-hidden="true">↗</span></a><a class="nav-action" href="#start">Get started <span aria-hidden="true">→</span></a></nav>
+</div></header>
+<main id="main" tabindex="-1">
+  <section class="hero shell">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> A little less disk. A lot more room.</p>
+      <h1>Make room<br>for what’s <span class="highlight">next.</span></h1>
+      <p class="lead">Your disk is full of yesterday’s builds.<br>Tell DiskRoom how much space you need.<br>Review a plan. Get back to making things.</p>
+      <div class="hero-actions"><a class="button button-dark" href="#start">Meet your new CLI <span aria-hidden="true">↗</span></a><a class="text-link" href="#playground">See the thinking <span aria-hidden="true">↓</span></a></div>
+      <p class="micro hero-meta">Runs locally · Node.js 22+ · No runtime dependencies</p>
+    </div>
+    <div class="hero-visual">
+      <div class="terminal-label"><span class="mono">01 / A LITTLE BREATHING ROOM</span><span class="demo-badge">Illustrative preview</span></div>
+      <div class="terminal" aria-label="Illustrative DiskRoom terminal, with a 2 gigabyte free-space goal">
+        <div class="terminal-chrome"><span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>~/projects</span><span aria-hidden="true">⌘</span></div>
+        <div class="terminal-body">
+          <p class="terminal-command"><span>$</span> diskroom --target-free 2GB</p>
+          <div class="terminal-title">DiskRoom <span>scan → review → clean</span></div>
+          <div class="terminal-stats"><div><span>FREE NOW</span><strong>0.4 <small>GB</small></strong></div><div><span>YOUR GOAL</span><strong>2.0 <small>GB</small></strong></div><div><span>NEED TO FIND</span><strong class="lime">1.6 <small>GB</small></strong></div></div>
+          <div class="terminal-item selected"><span class="check">✓</span><div>old-side-project/node_modules<small>Reinstallable · inactive · recommended</small></div><b>1.9 GB</b></div>
+          <div class="terminal-item"><span class="empty-check">□</span><div>current-project/node_modules<small>Protected · you’re working here</small></div><b>4.0 GB</b></div>
+          <div class="terminal-item"><span class="empty-check">□</span><div>debug.log<small>Review · may contain unique data</small></div><b>9.0 GB</b></div>
+          <div class="terminal-bottom"><span><i class="tiny-dot" aria-hidden="true"></i>Expected free: <b>2.3 GB</b></span><span>1 operation</span></div>
+          <div class="terminal-confirm"><span>Review plan before cleaning</span><span aria-hidden="true">↵</span></div>
+        </div>
+      </div>
+      <div class="margin-note"><svg viewBox="0 0 70 44" aria-hidden="true"><path d="M4 38C30 39 52 26 54 6m-10 9L55 5l8 12"/></svg><span>The big file doesn’t<br>always have to go.</span></div>
+    </div>
+  </section>
+  <section class="ecosystem-strip" aria-label="Built-in detector families"><div class="shell"><span class="eyebrow">Understands your workspace</span><div class="ecosystem-names"><span>Node.js</span><span>Python</span><span>Java / JVM</span><span>Docker</span><span>Git</span><span>Runtimes</span><span>Large files</span></div><a href="docs.html#capabilities" class="micro text-link">Detection and cleanup differ. See exact capabilities →</a></div></section>
+  <section id="how-it-works" class="section shell">
+    <div class="section-heading"><p class="eyebrow">Less guesswork. More context.</p><h2>A cleanup plan<br>you can <em>reason about.</em></h2><p>File size is only one part of the story. DiskRoom keeps three questions separate, so a huge folder can still be the wrong one to remove.</p></div>
+    <div class="reason-grid">
+      <article class="reason-card"><div class="card-top"><span class="number">01</span><svg viewBox="0 0 68 68" aria-hidden="true"><rect x="9" y="39" width="10" height="18"/><rect x="29" y="24" width="10" height="33"/><rect x="49" y="10" width="10" height="47"/></svg></div><h3>How much room?</h3><p>Logical size, disk allocation, and likely space reclaimed are different things. Shared files count conservatively.</p><span class="card-foot">SIZE &amp; ACTUAL BENEFIT</span></article>
+      <article class="reason-card"><div class="card-top"><span class="number">02</span><svg viewBox="0 0 68 68" aria-hidden="true"><path d="M34 8 55 17v17c0 12-9 21-21 27C22 55 13 46 13 34V17L34 8Z"/><path d="m23 33 8 8 16-17"/></svg></div><h3>Can it come back?</h3><p>A reproducible environment and the only copy of your data deserve different treatment. See the evidence and restoration steps.</p><span class="card-foot">RECOVERABILITY &amp; CONFIDENCE</span></article>
+      <article class="reason-card"><div class="card-top"><span class="number">03</span><svg viewBox="0 0 68 68" aria-hidden="true"><path d="M6 37h13l7-22 13 40 10-25 6 7h8"/></svg></div><h3>Do you need it now?</h3><p>Recent work, project context, and available process signals matter. Missing evidence is shown as uncertainty.</p><span class="card-foot">ACTIVITY &amp; CURRENT NEED</span></article>
+    </div>
+  </section>
+  <section id="playground" class="playground-section"><div class="shell playground-grid">
+    <div><p class="eyebrow">02 / TRY THE IDEA</p><h2>Set a goal.<br>Watch the plan<br><em>get smaller.</em></h2><p class="section-description">The goal is the <strong>total free space you want</strong>, including what you already have. DiskRoom selects only enough recommended work to get there.</p><p class="micro demo-explanation">Interactive illustration using fixed example data. This page never reads or changes your disk. The CLI performs fresh checks before any operation.</p></div>
+    <div class="calculator">
+      <div class="calculator-header"><span class="mono">YOUR SPACE BUDGET</span><span class="demo-badge light">Demo data</span></div>
+      <div class="range-label"><label for="goal">I’d like to have</label><output id="goal-output" for="goal">2.0 GB free</output></div>
+      <input id="goal" type="range" min="0.4" max="8" value="2" step="0.1" aria-valuetext="2.0 GB total free space" aria-describedby="goal-hint"><p id="goal-hint" class="micro">Already free: 0.4 GB <span>Desired total: up to 8 GB</span></p>
+      <div class="space-track" role="img" aria-label="0.4 GB already free, 1.9 GB selected"><span id="free-segment"></span><span id="gain-segment"></span><i id="goal-marker"></i></div>
+      <div class="legend"><span><i class="legend-free"></i>Free now</span><span><i class="legend-selected"></i>Selected gain</span><span><i class="legend-goal"></i>Your goal</span></div>
+      <div class="demo-candidates"><div id="demo-old" class="demo-row"><span class="demo-indicator" aria-hidden="true">✓</span><div><strong>Old project dependencies</strong><small>1.9 GB · recommended</small></div><span class="pill">Selected</span></div><div class="demo-row"><span aria-hidden="true">—</span><div><strong>Current project dependencies</strong><small>4.0 GB · protected</small></div><span class="pill muted">Keep</span></div><div class="demo-row"><span aria-hidden="true">—</span><div><strong>A very large debug log</strong><small>9.0 GB · needs review</small></div><span class="pill muted">Keep</span></div></div>
+      <div id="plan-status" class="plan-status" role="status" aria-live="polite"><strong>One operation. Enough room.</strong><span>Expected free: 2.3 GB. Your active project stays intact.</span></div>
+    </div>
+  </div></section>
+  <section class="section shell workflow-section"><div class="section-heading compact"><p class="eyebrow">You stay in control</p><h2>Look first.<br><em>Decide second.</em></h2></div><ol class="workflow"><li><span>01 / SCAN</span><h3>See what’s there.</h3><p>Scan your chosen scope. Inspect candidates, explanations, and uncertainty. Scanning writes local audit records and does no cleaning.</p><code>diskroom scan ./projects</code></li><li><span>02 / REVIEW</span><h3>Make the call.</h3><p>Adjust the goal and selection. Read what changes, what could go wrong, and how to restore an environment. Confirm a specific plan.</p><code>diskroom clean --scan &lt;run-id&gt;</code></li><li><span>03 / CLEAN</span><h3>Know when to stop.</h3><p>Recheck before each operation. Measure actual free space afterwards. Stop starting new work as soon as the goal is met.</p><code>diskroom history &lt;run-id&gt;</code></li></ol></section>
+  <section class="principles shell"><div class="principle-heading"><span class="eyebrow">A good tool knows its limits.</span><h2>Your machine.<br>Your decisions.</h2></div><div class="principle-copy"><div><h3>Local by design.</h3><p>No account, cloud service, AI model, or telemetry is needed for a local scan. Your file paths stay on your machine.</p></div><div><h3>An audit, not an undo button.</h3><p>Compressed records in <code>.diskroom</code> explain the scan, plan, and results. Deletion may be irreversible. Restoration can require network access and credentials.</p></div><div><h3>Conservative when unsure.</h3><p>Protected and unknown resources do not become expendable because a goal is ambitious. DiskRoom can finish with a goal unmet.</p></div></div></section>
+  <section id="start" class="section shell start-section"><div><p class="eyebrow">Make a little room</p><h2>Your next build<br>starts <em>here.</em></h2><p class="section-description">An npm-distributed CLI for Node.js, Python, Java, and mixed workspaces. Requires Node.js 22+ and npm.</p><a class="text-link" href="docs.html#getting-started">Read the getting-started guide →</a></div><div class="install-card"><div class="install-head"><strong>DiskRoom</strong><span id="release-status" class="release-status">Release preparation</span></div><p id="install-note">Publication is pending. These are the intended commands once the package is released.</p><div class="copy-block"><code>npm install --global diskroom</code><button type="button" class="copy-button" data-copy="npm install --global diskroom" aria-label="Copy installation command">Copy</button></div><div class="copy-block"><code>diskroom</code><button type="button" class="copy-button" data-copy="diskroom" aria-label="Copy launch command">Copy</button></div><p class="micro">Or, after publication: <code>npx diskroom</code></p><div class="release-links"><a id="npm-link" class="button button-dark" hidden>View on npm ↗</a><a id="repo-link" class="button button-outline" hidden>Source code ↗</a></div><p class="micro platform-note">Linux · macOS · Windows — <a href="docs.html#platforms">check verified platform status</a></p></div></section>
+</main>
+<footer class="site-footer"><div class="shell footer-row"><a class="brand" href="index.html"><img src="favicon.svg" alt="" width="28" height="28">DiskRoom<span class="brand-dot">.</span></a><span>Room for the work that matters.</span><nav aria-label="Footer navigation"><a href="docs.html">Docs</a><a href="docs.html#safety">Safety</a><a href="docs.html#project">Project &amp; license</a></nav></div></footer>
+<div class="sr-only" role="status" aria-live="polite" id="copy-status"></div>
+</body></html>
