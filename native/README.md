@@ -71,7 +71,8 @@ space is determined by a fresh filesystem measurement, not the delete return.
 
 Local Linux testing does not validate macOS/Windows behavior. Release gates must
 build and exercise the installed npm tarball on every advertised OS/architecture.
-The intended matrix is Linux x64/arm64, macOS x64/arm64 and Windows x64, Node 22/24.
+The intended matrix is Linux x64/arm64, macOS x64/arm64 and Windows x64, testing
+the product minimum Node 22.23.3 and the current Node 24 release.
 Unsupported or missing native binaries disable deletion; there is no path-based
 unsafe fallback in this bridge.
 
@@ -83,7 +84,7 @@ Node headers and the platform compiler (GCC/Clang, Xcode tools or MSVC). It writ
 binary ABI stable across supported Node releases. Windows requires a current
 Visual Studio C++ build-tools installation, supplied by GitHub's runner image.
 This pin supports Visual Studio 2026 (18.x), including its corrected version
-detection. The online build tool requires Node 22.22.2+ in the Node 22 line or
+detection. The build tool itself requires Node 22.22.2+ in the Node 22 line or
 Node 24.15.0+ in the Node 24 line; CI installs current patches in both lines.
 These are build-tool prerequisites, not a change to the published N-API runtime
 support. See the [node-gyp release notes](https://github.com/nodejs/node-gyp/releases/tag/v13.1.0)

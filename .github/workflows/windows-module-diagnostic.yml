@@ -1,0 +1,81 @@
+name: Windows module diagnostic
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/windows-module-diagnostic.yml
+      - src/processes.js
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: windows-2025
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22.23.3'
+          package-manager-cache: false
+      - name: Inspect only trusted system module loading
+        shell: pwsh
+        run: |
+          # Derive the OS location from .NET, never PATH/SystemRoot from a project.
+          # No process enumeration, command-line capture, raw exception messages,
+          # environment dumps, credentials, writes, or native builds are performed.
+          $env:DISKROOM_DIAGNOSTIC_SYSTEM_DIRECTORY = [Environment]::SystemDirectory
+          @'
+          import path from 'node:path';
+          import { spawnSync } from 'node:child_process';
+          const system = process.env.DISKROOM_DIAGNOSTIC_SYSTEM_DIRECTORY;
+          if (!/^[a-z]:\\.+\\System32$/i.test(system)) throw new Error('Invalid OS system directory');
+          const home = path.win32.join(system, 'WindowsPowerShell', 'v1.0');
+          const executable = path.win32.join(home, 'powershell.exe');
+          const env = { SystemRoot: path.win32.dirname(system), WINDIR: path.win32.dirname(system), PATH: system, PSModulePath: path.win32.join(home, 'Modules'), PSModuleAnalysisCachePath: 'NUL' };
+          const variants = [
+            { name: 'minimal-none-original-order', auto: 'None', modules: ['CimCmdlets', 'Microsoft.PowerShell.Utility'], resolution: 'manifest' },
+            { name: 'minimal-none-utility-first', auto: 'None', modules: ['Microsoft.PowerShell.Utility', 'CimCmdlets'], resolution: 'manifest' },
+            { name: 'system-path-all-utility-first', auto: 'All', modules: ['Microsoft.PowerShell.Utility', 'CimCmdlets'], resolution: 'manifest' },
+            { name: 'system-path-none-module-names', auto: 'None', modules: ['Microsoft.PowerShell.Utility', 'CimCmdlets'], resolution: 'name' },
+            { name: 'minimal-with-os-folders', auto: 'None', modules: ['CimCmdlets', 'Microsoft.PowerShell.Utility'], resolution: 'manifest', folders: true },
+          ];
+          for (const variant of variants) {
+            const script = String.raw`
+          $ErrorActionPreference = 'Stop'
+          [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+          $PSModuleAutoLoadingPreference = '${variant.auto}'
+          ${variant.name.startsWith('system-path') ? "$env:PSModulePath = $PSHOME + '\\Modules'" : ''}
+          ${variant.folders ? String.raw`
+          $env:ProgramFiles = [Environment]::GetFolderPath('ProgramFiles')
+          $env:USERPROFILE = [Environment]::GetFolderPath('UserProfile')
+          $env:LOCALAPPDATA = [Environment]::GetFolderPath('LocalApplicationData')
+          $env:APPDATA = [Environment]::GetFolderPath('ApplicationData')
+          ` : ''}
+          $before = $null
+          try { $before = $ExecutionContext.InvokeCommand.GetCommand('ConvertTo-Json', [System.Management.Automation.CommandTypes]::Cmdlet) } catch {}
+          [Console]::WriteLine('{"kind":"builtin","jsonPresent":' + ($null -ne $before).ToString().ToLowerInvariant() + '}')
+          foreach ($name in @(${variant.modules.map(name => `'${name}'`).join(',')})) {
+            $manifest = $PSHOME + '\Modules\' + $name + '\' + $name + '.psd1'
+            [Console]::WriteLine('{"kind":"manifest","module":"' + $name + '","exists":' + [IO.File]::Exists($manifest).ToString().ToLowerInvariant() + '}')
+            try {
+              Import-Module -Name ${variant.resolution === 'name' ? '$name' : '$manifest'} -ErrorAction Stop
+              [Console]::WriteLine('{"kind":"result","module":"' + $name + '","loaded":true}')
+            } catch {
+              $type = $_.Exception.GetType().FullName -replace '[^a-zA-Z0-9_.+]', '?'
+              $id = $_.FullyQualifiedErrorId -replace '[^a-zA-Z0-9_.,+]', '?'
+              if ($id.Length -gt 240) { $id = $id.Substring(0, 240) }
+              [Console]::WriteLine('{"kind":"result","module":"' + $name + '","loaded":false,"exceptionType":"' + $type + '","errorId":"' + $id + '"}')
+            }
+          }
+          `;
+            const result = spawnSync(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { env, cwd: home, encoding: 'utf8', windowsHide: true, shell: false, timeout: 15000, maxBuffer: 1024 * 1024 });
+            const records = [];
+            for (const line of (result.stdout || '').split(/\r?\n/)) {
+              try { const record = JSON.parse(line); if (['builtin', 'manifest', 'result'].includes(record.kind)) records.push(record); } catch {}
+            }
+            console.log(JSON.stringify({ variant: variant.name, exitCode: result.status, error: result.error?.code || null, stderrPresent: Boolean(result.stderr), records }));
+          }
+          '@ | node --input-type=module

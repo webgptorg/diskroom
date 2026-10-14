@@ -1,10 +1,10 @@
 # Development
 
-DiskRoom uses native ESM JavaScript and Node.js built-ins. There are no runtime npm dependencies. Node.js 22+ is required. Run all destructive tests only over isolated fixtures.
+DiskRoom uses native ESM JavaScript and Node.js built-ins. There are no runtime npm dependencies. Node.js 22.23.3+ is required. Run all destructive tests only over isolated fixtures.
 
 ## Work on the CLI
 
-From the provided source checkout, use Node.js 22+ and its bundled npm. There is no dependency installation step for the JavaScript application. Help and scans run directly:
+From the provided source checkout, use Node.js 22.23.3+ and its bundled npm. There is no dependency installation step for the JavaScript application. Help and scans run directly:
 
 ```sh
 node bin/diskroom.js --help

@@ -7,7 +7,7 @@
     "diskroom": "bin/diskroom.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.23.3"
   },
   "homepage": "https://diskroom.dev",
   "license": "MIT",

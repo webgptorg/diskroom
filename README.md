@@ -4,11 +4,11 @@
 
 DiskRoom is a local, interactive CLI. It scans a chosen scope, explains a conservative cleanup plan, and executes only explicitly confirmed operations. The goal means **total free space after cleanup**, not an additional amount to delete.
 
-> Release preparation: npm publication, `diskroom.dev` ownership/deployment and native platform verification must be confirmed before release. Installation commands below are intended published-package usage, not a claim that the npm package is already available. See [platform verification](docs/platforms.md) and the repository’s release notes for actual test evidence.
+> [Source repository](https://github.com/webgptorg/diskroom) · [Publication and delivery status](docs/status.md) · [Platform verification](docs/platforms.md). Check the recorded status and test evidence for the version you intend to use.
 
 ## Install and run
 
-Requires **Node.js 22+ and npm**, including for Python and Java projects. After publication:
+Requires **Node.js 22.23.3+ and npm**, including for Python and Java projects. For a published release:
 
 ```sh
 npm install --global diskroom

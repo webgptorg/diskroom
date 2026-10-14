@@ -1,18 +1,20 @@
 # Platform verification
 
-DiskRoom targets native Linux, macOS, and Windows, with Node.js 22 and 24 in the test matrix. Windows does not require WSL. Target support is not the same as a completed native test run.
+DiskRoom targets native Linux, macOS, and Windows, with a minimum runtime of Node.js 22.23.3. Both the source and installed-package matrices test that exact minimum and the current Node.js 24 release. Windows does not require WSL. Target support is not the same as a completed native test run.
 
 The release process must update the table from actual CI and installed-package results before claiming a verified release. Defining a workflow, compiling on another OS, or running Linux tests is not proof of Windows/macOS behavior.
 
-| Target | Native source tests | Installed package tests | Current status |
-| --- | --- | --- | --- |
-| Linux x64 | Node 22.23.3 and 24.19.0: 115 passed, 4 OS skips each | Local tarball installed without scripts; Node 24 native/CLI smoke passed | Verified locally; complete release matrix pending. |
-| Linux arm64 | Pending | Pending | CI target configured. |
-| macOS Intel | Pending | Pending | CI target configured. |
-| macOS Apple silicon | Pending | Pending | CI target configured. |
-| Windows x64 / PowerShell | Pending | Pending | CI target configured. |
+The following is dated evidence from **14 October 2026**, commit `b29087e5`, [CI run 38617605431](https://github.com/webgptorg/diskroom/actions/runs/38617605431). It is a historical snapshot, not a claim that a later commit or published package passed.
 
-Local Linux x64 results were recorded on 14 October 2026. Cross-platform CI has run and exposed failures; fixes require another complete run. See [live Actions](https://github.com/webgptorg/diskroom/actions) for current results and [verification evidence](verification.md) for recorded scope and limitations. Every advertised target and installed-tarball job must pass for the exact published artifact.
+| Target | Native source tests in this run | Assembled installed-package tests | Recorded result |
+| --- | --- | --- | --- |
+| Linux x64 | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
+| Linux arm64 | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
+| macOS Intel | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
+| macOS Apple silicon | Both Node 22 and Node 24 jobs passed. | Not run; no complete artifact assembled. | Source checks passed; release gate incomplete. |
+| Windows x64 / PowerShell | Source gate failed on a process-observation test; the Windows import fix is pending validation. | Not run; no complete artifact assembled. | Release blocked. |
+
+Eight Linux/macOS source jobs passed, but the Windows failure prevented the full release pipeline from succeeding. The earlier local Linux x64 tarball/native smoke is separate evidence and does not verify an assembled multiplatform package. See [verification evidence](verification.md) for that local scope, and [live Actions](https://github.com/webgptorg/diskroom/actions) for newer results. Every advertised target and installed-tarball job must pass for the exact artifact being published.
 
 See `.github/workflows/ci.yml` for the current exact runner/Node matrix and `web/release.json` for public release status. Optional managers and Docker/Git actions do not gain execution support merely because Node tests pass; refer to [capabilities](capabilities.md).
 

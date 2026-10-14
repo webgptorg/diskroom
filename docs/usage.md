@@ -2,7 +2,7 @@
 
 ## A first scan
 
-Requires Node.js 22+. After verified npm publication, install with `npm install --global diskroom`, or use `npx diskroom`. From a source checkout, `node bin/diskroom.js` is equivalent to the executable.
+Requires Node.js 22.23.3+. For a published release, install with `npm install --global diskroom`, or use `npx diskroom`. Check [publication status](status.md) and [platform verification](platforms.md) for the version you intend to use. From a source checkout, `node bin/diskroom.js` is equivalent to the executable.
 
 ```sh
 diskroom scan ./projects --target-free 5GB

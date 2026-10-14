@@ -4,7 +4,7 @@ The release unit is the **single `diskroom-package` artifact from a successful C
 
 ## Quality gates
 
-CI compiles and tests the native filesystem bridge on the following runners, with Node 22 and Node 24 for every target:
+CI compiles and tests the native filesystem bridge on the following runners, with the exact minimum runtime Node 22.23.3 and the current Node 24 release for every target:
 
 | Target | GitHub-hosted runner |
 | --- | --- |
@@ -14,7 +14,7 @@ CI compiles and tests the native filesystem bridge on the following runners, wit
 | macOS Apple Silicon | `macos-15` |
 | Windows x64 | `windows-2025` |
 
-After all ten source-test jobs pass, CI assembles the Node 22 N-API prebuilds into one tarball. Ten additional jobs install that same tarball without installation scripts, check CLI startup and exercise its native bridge against temporary fixtures. No job runs cleanup against user folders. Windows arm64 and Linux distributions with a different C library are not validated release targets. Passing Linux CI does not establish Windows or macOS support.
+After all ten source-test jobs pass, CI assembles the Node 22.23.3 N-API prebuilds into one tarball. Ten additional jobs install that same tarball without installation scripts, check CLI startup and exercise its native bridge against temporary fixtures. No job runs cleanup against user folders. Windows arm64 and Linux distributions with a different C library are not validated release targets. Passing Linux CI does not establish Windows or macOS support.
 
 The workflow has no publish permission. Read `.github/workflows/ci.yml` for the exact gates; every job must succeed before a release is eligible. The GitHub runner labels are documented in the [runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
