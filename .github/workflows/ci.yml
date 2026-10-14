@@ -162,7 +162,7 @@ jobs:
         run: npm install --prefix "$RUNNER_TEMP/diskroom-smoke" --ignore-scripts --no-audit --no-fund --package-lock=false .release/*.tgz
       - name: Exercise the installed command
         run: |
-          node "$RUNNER_TEMP/diskroom-smoke/node_modules/diskroom/bin/diskroom.js" --version
-          node "$RUNNER_TEMP/diskroom-smoke/node_modules/diskroom/bin/diskroom.js" --help
+          npm exec --offline --prefix "$RUNNER_TEMP/diskroom-smoke" -- diskroom --version
+          npm exec --offline --prefix "$RUNNER_TEMP/diskroom-smoke" -- diskroom --help
       - name: Exercise the installed native bridge on isolated fixtures
         run: node native/smoke.mjs "$RUNNER_TEMP/diskroom-smoke/node_modules/diskroom/native/index.js"

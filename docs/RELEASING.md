@@ -23,12 +23,12 @@ The workflow has no publish permission. Read `.github/workflows/ci.yml` for the 
 1. Confirm the repository owner. The owner approved the MIT License; verify that package metadata says `MIT` and the full `LICENSE` text with copyright © 2026 Pavol Hejný is included. Ensure `repository.url` is exactly `git+https://github.com/webgptorg/diskroom.git`.
 2. Push the reviewed sources to the public `webgptorg/diskroom` repository and wait for every CI job to pass. Review the packaged inventory, target matrix and manifest for that exact commit.
 3. Download and extract that run's `diskroom-package` artifact. Verify its tarball SHA-512 against `manifest.json` before using it. Confirm that the intended npm account owns or can claim `diskroom`.
-4. Run `npm login --auth-type=web --registry=https://registry.npmjs.org` in the maintainer's terminal. Complete npm's browser authentication and 2FA flow. Never put passwords, recovery codes, OTPs or access tokens in repository files, issue comments or chat.
+4. Run `npm login --auth-type=web --registry=https://registry.npmjs.org` in the maintainer's terminal. Complete npm's browser authentication and 2FA flow, then check the account with `npm whoami --registry=https://registry.npmjs.org`. Never put passwords, recovery codes, OTPs or access tokens in repository files, issue comments or chat.
 5. From the extracted artifact folder, publish the reviewed tarball (replace the version with the manifest's version):
 
    ```sh
-   npm publish ./diskroom-0.1.0.tgz --ignore-scripts --access public
-   npm view diskroom@0.1.0 version dist.integrity repository.url --json
+   npm publish ./diskroom-0.1.0.tgz --ignore-scripts --access public --registry=https://registry.npmjs.org
+   npm view diskroom@0.1.0 version dist.integrity repository.url --json --registry=https://registry.npmjs.org
    ```
 
    The registry integrity must match the manifest. This bootstrap uses the maintainer's npm session; it does not claim GitHub OIDC provenance.

@@ -118,10 +118,22 @@ nativeTest('native metadata matches the scanner Node lstat fingerprint', async (
 
 if (process.platform !== 'win32') nativeTest('native refuses lossy UTF-8 filename inventories', async () => fixture(async directory => {
   const invalidName = Buffer.concat([Buffer.from(directory + path.sep), Buffer.from([0xff, 0x66])]);
-  await writeFile(invalidName, 'do not lose identity');
+  let filesystemRejected = false;
+  try {
+    await writeFile(invalidName, 'do not lose identity');
+  } catch (error) {
+    // APFS rejects invalid UTF-8 before native enumeration can observe it.
+    // Linux must still exercise the bridge's raw-filename rejection below.
+    if (process.platform !== 'darwin' || error.code !== 'EILSEQ') throw error;
+    filesystemRejected = true;
+  }
   const root = native.openRoot(directory);
   try {
-    assert.throws(() => native.readDirectory(root), { code: 'ERR_FILENAME_ENCODING' });
-    assert.equal(await readFile(invalidName, 'utf8'), 'do not lose identity');
+    if (filesystemRejected) {
+      assert.deepEqual(native.readDirectory(root), []);
+    } else {
+      assert.throws(() => native.readDirectory(root), { code: 'ERR_FILENAME_ENCODING' });
+      assert.equal(await readFile(invalidName, 'utf8'), 'do not lose identity');
+    }
   } finally { native.close(root); }
 }));

@@ -18,9 +18,15 @@ Recorded 14 October 2026. These are local prerelease checks, not evidence of an 
 
 The source suite is run with `node --test`. The local installed-package smoke is `node native/smoke.mjs /absolute/path/to/installed/diskroom/native/index.js`.
 
+## Remote CI evidence
+
+Sources are present on `main` in [webgptorg/diskroom](https://github.com/webgptorg/diskroom). CI runs [38614542668](https://github.com/webgptorg/diskroom/actions/runs/38614542668) and [38615387227](https://github.com/webgptorg/diskroom/actions/runs/38615387227) failed; they are not release approval. Target-specific fixes are being validated. Consult [live Actions](https://github.com/webgptorg/diskroom/actions) for newer results.
+
+The release gate is one complete successful source, package-assembly, and installed-tarball matrix for the exact artifact and commit being published. Local results and passing jobs from different commits cannot substitute for that gate.
+
 ## Outstanding evidence
 
-- CI on Linux arm64, macOS Intel/Apple silicon, Windows x64, and the assembled single multiplatform tarball.
+- A complete successful CI matrix on every declared target, including Linux arm64, macOS Intel/Apple silicon, Windows x64, and the assembled single multiplatform tarball.
 - Real Docker daemon removal on disposable resources; Git maintenance on macOS/Windows is deliberately unavailable.
 - Browser rendering on desktop/mobile. Playwright was installed, but browser executables were unavailable; the connected browser timed out. No screenshot or visual QA claim is made.
 - Custom-domain registration/DNS/TLS and public npm installation.

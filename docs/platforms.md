@@ -12,7 +12,7 @@ The release process must update the table from actual CI and installed-package r
 | macOS Apple silicon | Pending | Pending | CI target configured. |
 | Windows x64 / PowerShell | Pending | Pending | CI target configured. |
 
-Local Linux x64 results were recorded on 14 October 2026. The configured cross-platform CI matrix has not run. See [verification evidence](verification.md) for exact scope and limitations.
+Local Linux x64 results were recorded on 14 October 2026. Cross-platform CI has run and exposed failures; fixes require another complete run. See [live Actions](https://github.com/webgptorg/diskroom/actions) for current results and [verification evidence](verification.md) for recorded scope and limitations. Every advertised target and installed-tarball job must pass for the exact published artifact.
 
 See `.github/workflows/ci.yml` for the current exact runner/Node matrix and `web/release.json` for public release status. Optional managers and Docker/Git actions do not gain execution support merely because Node tests pass; refer to [capabilities](capabilities.md).
 

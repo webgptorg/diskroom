@@ -5,11 +5,11 @@ Status recorded on 14 October 2026. This is a prerelease source implementation, 
 | Deliverable | Current state | Remaining gate |
 | --- | --- | --- |
 | CLI source | Interactive scan/review/confirmation, planning, audit/history, protections, and bounded cleanup are implemented. | Local integrated review passed; cross-platform release test matrix remains. |
-| Repository | Public repository `https://github.com/webgptorg/diskroom` exists and its owner/permissions are verified. | Upload the reviewed source commit and complete its CI run. |
+| Repository | Public repository [webgptorg/diskroom](https://github.com/webgptorg/diskroom) contains the source on `main`; owner/permissions are verified. | The exact release commit and packaged artifact must pass the complete [Actions matrix](https://github.com/webgptorg/diskroom/actions). |
 | npm | `diskroom` package metadata, bin entry, packaging and publishing workflows are prepared. | Owner-controlled npm identity, verified multiplatform tarball, registry publication, and installed public-package check. |
 | Website | Static landing page, documentation, goal illustration, and release-state manifest exist. Production at `https://diskroom.vercel.app` is public; previews remain access-protected. | Owned `diskroom.dev` registration/DNS/HTTPS, and browser verification. |
 | License | MIT, approved by the owner; full text is in `LICENSE`. Copyright © 2026 Pavol Hejný. | Include the license and copyright notice in distributed copies. |
-| Verification | Linux x64: final source suite on Node 22.23.3 and 24.19.0 each passed 115 tests, with 4 OS-specific skips. Local tarball installation/native smoke and real terminal checks passed. | CI is defined for Node 22/24 on Linux x64/arm64, macOS x64/arm64 and Windows x64; it has not run. Other platform and complete multiplatform installed-tarball results remain required. |
+| Verification | Recorded local Linux x64 suite: Node 22.23.3 and 24.19.0 each passed 115 tests, with 4 OS-specific skips. Local tarball installation/native smoke and real terminal checks passed. | Cross-platform CI has run and exposed failures; fixes are being validated. The published artifact must pass every source and installed-tarball matrix job. See [live Actions](https://github.com/webgptorg/diskroom/actions) and [recorded evidence](verification.md). |
 
 ## Remaining capability limits against the full specification
 

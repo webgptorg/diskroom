@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { main, parseArgs, cleanExitCode } from '../src/cli.js';
@@ -117,7 +117,7 @@ test('archive annotation is explicit and preserves protection settings', async (
 });
 
 test('real scan and compressed history roundtrip preserve fixture sources and caches', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'diskroom-cli-roundtrip-'));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'diskroom-cli-roundtrip-')));
   const project = path.join(root, 'project');
   const cache = path.join(project, '__pycache__');
   try {
