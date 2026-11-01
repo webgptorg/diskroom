@@ -1,7 +1,7 @@
 {
     "name": "diskroom",
     "version": "0.1.0",
-    "description": "Goal-driven disk cleanup for developers.",
+    "description": "Goal-driven disk cleanup for developers. Make the room you need, with context about what can be restored and what you still use.",
     "type": "module",
     "bin": {
         "diskroom": "bin/diskroom.js"
