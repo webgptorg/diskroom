@@ -5,12 +5,12 @@
 
 
 [![Quality of package DiskRoom](https://packagequality.com/shield/diskroom.svg)](https://packagequality.com/#?package=diskroom)
-[![ci](https://github.com/webgptorg/diskroom/actions/workflows/ci.yml/badge.svg)](https://github.com/webgptorg/diskroom/actions/workflows/ci.yml)
-[![windows-module-diagnostic](https://github.com/webgptorg/diskroom/actions/workflows/windows-module-diagnostic.yml/badge.svg)](https://github.com/webgptorg/diskroom/actions/workflows/windows-module-diagnostic.yml)
 [![Known Vulnerabilities](https://snyk.io/test/github/webgptorg/diskroom/badge.svg)](https://snyk.io/test/github/webgptorg/diskroom)
 [![Issues](https://img.shields.io/github/issues/webgptorg/diskroom.svg?style=flat)](https://github.com/webgptorg/diskroom/issues)
 <!--[![License of DiskRoom](https://img.shields.io/github/license/webgptorg/diskroom.svg?style=flat)](https://github.com/webgptorg/diskroom/blob/main/LICENSE)-->
 <!--[![NPM Version of DiskRoom](https://badge.fury.io/js/diskroom.svg)](https://www.npmjs.com/package/diskroom)-->
+<!--[![ci](https://github.com/webgptorg/diskroom/actions/workflows/ci.yml/badge.svg)](https://github.com/webgptorg/diskroom/actions/workflows/ci.yml)-->
+<!--[![windows-module-diagnostic](https://github.com/webgptorg/diskroom/actions/workflows/windows-module-diagnostic.yml/badge.svg)](https://github.com/webgptorg/diskroom/actions/workflows/windows-module-diagnostic.yml)-->
 <!--[![Socket](https://socket.dev/api/badge/npm/package/diskroom)](https://socket.dev/npm/package/diskroom)-->
 
 <!--/Badges-->
